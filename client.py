@@ -66,7 +66,7 @@ def getEventLogs(companyId, logtype, logPath):
             events = win32evtlog.ReadEventLog(hand, flags, 0)
 
             for ev_obj in events:
-                the_time = ev_obj.TimeGenerated.Format()  # '12/23/99 15:54:09'
+                the_time = ev_obj.TimeGenerated.Format()  #  '12/23/99 15:54:09'
                 time_obj = datetime.strptime(the_time, '%c')
                 evt_id = int(winerror.HRESULT_CODE(ev_obj.EventID))
                 computer = str(ev_obj.ComputerName)
