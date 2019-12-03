@@ -105,3 +105,4 @@ if __name__ == "__main__":
     pickUpEventIDs = [7, 8, 9, 14, 6008]  # 需要提取的事件ID列表
     # pickUplogTypes = ["System", "Application", "Security"]
     getAllEvents(companyId, pickUplogTypes, ".\\")  # todo需要修改输出位置
+    # print()
