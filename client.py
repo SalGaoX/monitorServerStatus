@@ -110,7 +110,10 @@ def getEventLogs(companyId, logtype, eventIDs, path, needDaySpace):
                 cat = ev_obj.EventCategory
                 # seconds=date2sec(the_time)
                 record = ev_obj.RecordNumber
-                msg = win32evtlogutil.SafeFormatMessage(ev_obj, logtype)
+                try:
+                    msg = win32evtlogutil.SafeFormatMessage(ev_obj, logtype)
+                except:
+                    msg = ''
                 source = str(ev_obj.SourceName)
                 nowtime = datetime.today()
                 daySpace = nowtime.__sub__(time_obj).days
