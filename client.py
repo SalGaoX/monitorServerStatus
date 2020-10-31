@@ -35,24 +35,22 @@ def execlog():
                 #     getdetaiconfig[i]['sentstatus'][k] = str(0)
                 t = getdetail[k]
                 if t not in ts:
-                    ts.add({k:t})
+                    ts.add({k: t})
                     # del getdetail[k]
                 else:
-                    #print("存在相同时间{}{}".format(k,t))
+                    # print("存在相同时间{}{}".format(k,t))
                     pass
-            #print("aaaa%s"%ts)
+            # print("aaaa%s"%ts)
 
             getdetaiconfig.set(str(i), 'sentstatus', str(ts))
-                # print(getdetaiconfig[i]['detail'])
-                # if eval(getdetail)[k] in ts:
+            # print(getdetaiconfig[i]['detail'])
+            # if eval(getdetail)[k] in ts:
             # print(getdetail)
         with open(detailIniPath, 'w', encoding='utf-8') as detailIniPath:
             getdetaiconfig.write(detailIniPath)
     else:
         print("detail.ini不存在，退出!")
         sys.exit()
-
-
 
 
 def getAllEvents(companyId, logType, eventIDs, logPath, needDaySpace):
@@ -247,21 +245,33 @@ def sendmail(companyId, mail_host, port, mail_user, mail_pass, sender, receivers
     with open(detailIniPath, 'w', encoding='utf-8') as detailIniPath:
         getdetaiconfig.write(detailIniPath)
     # print(sended)
+    # print(From,To)
+    # print(type(To))
     if sended:
         print("检测到有数据,开始发送邮件......")
         message = MIMEText(mail_msg, 'html', 'utf-8')
         message['From'] = Header(From, 'utf-8')
-        message['To'] = Header(To, 'utf-8')
         subject = '预警邮件来自---{}'.format(companyId)
         message['Subject'] = Header(subject, 'utf-8')
+        if isinstance(receivers, str):
+            message["To"] = receivers
+        elif isinstance(receivers, list):
+            message['To'] = ";".join(receivers)
         try:
-            smtpObj = smtplib.SMTP()
-            smtpObj.connect(mail_host, port)  # 25 为 SMTP 端口号
-            smtpObj.login(mail_user, mail_pass)
-            smtpObj.sendmail(sender, receivers, message.as_string())
-            print("邮件发送成功")
-        except smtplib.SMTPException:
+            if int(port) == 465:
+                smtpSSLObj = smtplib.SMTP_SSL(mail_host, int(port))
+                smtpSSLObj.login(mail_user, mail_pass)
+                smtpSSLObj.sendmail(sender, receivers.split(","), message.as_string())
+                print("邮件发送成功")
+            elif int(port) == 25:
+                smtpObj = smtplib.SMTP()
+                smtpObj.connect(mail_host, int(port))
+                smtpObj.login(mail_user, mail_pass)
+                smtpObj.sendmail(sender, receivers.split(","), message.as_string())
+                print("邮件发送成功")
+        except smtplib.SMTPException as e:
             print("Error: 无法发送邮件")
+            print(e)
     else:
         print("检测到没有数据,不发送邮件,跳过......")
 
@@ -270,36 +280,80 @@ if __name__ == "__main__":
     while True:
         configIniPath = 'config.ini'
         if not os.path.exists(configIniPath):
+
+            # DEFAULT
+            IP, barName, serverNotes, loopTime = '', '', '', ''
+            while not IP:
+                IP = input("请输入IP地址,按回车继续 *必填项*：\n")
+            while not barName:
+                barName = input("请输入网吧名称,按回车继续 *必填项*：\n")
+            while not serverNotes:
+                serverNotes = input("请输入服务器备注,按回车继续 *必填项*：\n")
+            while not loopTime:
+                loopTime = input("请输入脚本循环时间(分钟),按回车继续(直接回车默认值=5)：\n")
+
+            # DETAIL
+            needDaySpace, logType, eventType, eventIDs, logPath = '', '', '', '', ''
+            while not needDaySpace:
+                needDaySpace = input("请输入匹配至今多少天内的日志,按回车继续(直接回车默认值=7)：\n")
+            while not logType:
+                logType = input("请输入事件日志(多个值用,隔开),按回车继续(直接回车默认值=System)：\n")
+            while not eventType:
+                eventType = input("请输入事件级别(多个值用,隔开),按回车继续(直接回车默认值=错误)：\n")
+            while not eventIDs:
+                eventIDs = input("请输入事件ID列表(多个值用,隔开),按回车继续(直接回车默认值=7,8,9,11,14)：\n")
+            while not logPath:
+                logPath = input("请输入日志路径（\\必须为\\\\）,按回车继续(直接回车默认值=D:\\错误日志文件)：\n")
+
+            # MAIL
+            mail_host, port, mail_user, mail_pass, sender, receivers, From, To, = '', '', '', '', '', '', '', ''
+            while not mail_host:
+                mail_host = input("请输入smtp地址,按回车继续 *必填项* ：\n")
+            while not port:
+                port = input("请输入port地址,按回车继续 *必填项* ：\n")
+            while not mail_user:
+                mail_user = input("请输入邮箱用户名,按回车继续 *必填项* ：\n")
+            while not mail_pass:
+                mail_pass = input("请输入邮箱密码或授权码,按回车继续 *必填项* ：\n")
+            while not sender:
+                sender = input("请输入发件人邮箱地址,按回车继续 *必填项* ：\n")
+            while not receivers:
+                receivers = input("请输入收人邮箱地址（多个值用,隔开）,按回车继续 *必填项* ：\n")
+            while not From:
+                From = input("请输入发件人,按回车继续 *必填项* ：\n")
+            while not To:
+                To = input("请输入收件人(多个值用,隔开),按回车继续 *必填项* ：\n")
+
             config = configparser.ConfigParser()
             config["DEFAULT"] = {'; 备注：': 'IP=IP地址, barName=网吧名称,serverNotes=服务器备注, loopTime=脚本循环时间(分钟) ',
-                                 'IP': '192.168.1.1',
-                                 'barName': '网吧名称',
-                                 'serverNotes': '服务器备注',
-                                 'loopTime': '5'}
+                                 'IP': IP,
+                                 'barName': barName,
+                                 'serverNotes': serverNotes,
+                                 'loopTime': loopTime}
             config["DETAIL"] = {'; 备注：': 'needDaySpace=需要匹配至今多少天内的日志, logType=事件日志, eventType=事件级别, event'
                                          'IDs=事件ID列表，'
                                          'logPath＝日志路径 ',
-                                'needDaySpace': '7',
-                                'logType': 'System',
-                                'eventType': '错误',
-                                'eventIDs': '7,8,9,11,14',
-                                'logPath': 'D:\\错误日志文件'
+                                'needDaySpace': needDaySpace,
+                                'logType': logType,
+                                'eventType': eventType,
+                                'eventIDs': eventIDs,
+                                'logPath': logPath
                                 }
             config["MAIL"] = {'; 备注：': 'mail_host＝smtp地址, port=smtp地址(默认25), mail_user=邮箱用户名, mail_pass=邮箱密码'
-                                       'sender=发送人邮件地址, receivers=收件人邮件地址, From=发送人姓名, To=接收人姓名',
-                              'mail_host': "",
-                              'port': '25',
-                              "mail_user": "",
-                              "mail_pass": "",
-                              "sender": '',
-                              "receivers": '',
-                              "From": '',
-                              "To": ''
+                                       'sender=发送人邮件地址, receivers=收件人邮件地址, from=发送人姓名, to=接收人姓名',
+                              'mail_host': mail_host,
+                              'port': port,
+                              "mail_user": mail_user,
+                              "mail_pass": mail_pass,
+                              "sender": sender,
+                              "receivers": receivers,
+                              "from": From,
+                              "to": To
                               }
             with open(configIniPath, 'w', encoding='utf-8') as configfile:
                 config.write(configfile)
 
-            print("不存在配置文件,已生成默认配置文件：{}，请修改配置后再次打开！".format(configIniPath))
+            print("配置完成,已生成默认配置文件：{}，请关闭程序后再次打开！".format(configIniPath))
             out = input("按回车退出\n")
             sys.exit()
         else:
@@ -322,8 +376,10 @@ if __name__ == "__main__":
             mail_pass = config["MAIL"]["mail_pass"]
             sender = config["MAIL"]["sender"]
             receivers = config["MAIL"]["receivers"]
-            From = config["MAIL"]["From"]
-            To = config["MAIL"]["To"]
+            From = config["MAIL"]["from"]
+            To = config["MAIL"]["to"].split(',')
+            if len(To) == 1:
+                To = To[0]
             looptime = config["DEFAULT"]['looptime']
             looptime = int(looptime) * 60
             if not os.path.isdir(logPath):
@@ -339,7 +395,7 @@ if __name__ == "__main__":
             print("开始获取系统日志......")
             getAllEvents(companyId, logType, eventIDs, logPath, needDaySpace)  # todo需要修改输出位置
             print("开始处理系统日志......")
-            #execlog()
+            # execlog()
             print("开始处理邮件......")
             detailIniPath = 'detail.ini'
             if os.path.exists(detailIniPath):
@@ -363,24 +419,18 @@ if __name__ == "__main__":
                 #         t = edetail[k]
                 #         if t in ks:
 
-
-                        # dd = str(section) + '-' + str(k)
-                        # #print(edetail)
-                        # if t not in edetail:
-                        #     print("不存在相同时间{}-{}".format(k,t))
-                        #     ks.add(dd)
-                        # else:
-                        #     print("存在相同时间{}-{}".format(k,t))
-                        #     #print(edetail[k])
-                    # print(ks)
-                    # print(len(edetail))
-
+                # dd = str(section) + '-' + str(k)
+                # #print(edetail)
+                # if t not in edetail:
+                #     print("不存在相同时间{}-{}".format(k,t))
+                #     ks.add(dd)
+                # else:
+                #     print("存在相同时间{}-{}".format(k,t))
+                #     #print(edetail[k])
+                # print(ks)
+                # print(len(edetail))
 
 
-
-
-
-                    # -------- todo
 
                 sendmail(companyId, mail_host, port, mail_user, mail_pass, sender, receivers, From, To, getdetaiconfig)
                 # with open(detailIniPath, 'w', encoding='utf-8') as detailIniPath:
