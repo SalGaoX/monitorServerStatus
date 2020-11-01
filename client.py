@@ -12,7 +12,6 @@ import win32evtlogutil
 import winerror
 import configparser
 import smtplib
-import pywintypes
 from email.mime.text import MIMEText
 from email.header import Header
 from datetime import datetime
@@ -30,22 +29,10 @@ def execlog():
             getdetail = eval(getdetaiconfig[i]['detail'])
             print(len(getdetail))
             for k in (getdetail):
-                # dic = getdetaiconfig[i]['sentstatus']
-                # if k not in dic.keys():
-                #     getdetaiconfig[i]['sentstatus'][k] = str(0)
                 t = getdetail[k]
                 if t not in ts:
                     ts.add({k: t})
-                    # del getdetail[k]
-                else:
-                    # print("存在相同时间{}{}".format(k,t))
-                    pass
-            # print("aaaa%s"%ts)
-
             getdetaiconfig.set(str(i), 'sentstatus', str(ts))
-            # print(getdetaiconfig[i]['detail'])
-            # if eval(getdetail)[k] in ts:
-            # print(getdetail)
         with open(detailIniPath, 'w', encoding='utf-8') as detailIniPath:
             getdetaiconfig.write(detailIniPath)
     else:
@@ -61,14 +48,10 @@ def getAllEvents(companyId, logType, eventIDs, logPath, needDaySpace):
     else:
         serverName = companyId
     for logtype in logType:
-        # print(logtype)
         path = os.path.join(logPath, "%s-%s-日志.log" % (serverName, logtype))
         print('输出日志位置为：', path)
-        # print(path)
         getEventLogs(companyId, logtype, eventIDs, path, needDaySpace)
 
-
-# ----------------------------------------------------------------------
 def getEventLogs(companyId, logtype, eventIDs, path, needDaySpace):
     """
     Get the event logs from the specified machine according to the
@@ -169,12 +152,12 @@ def getEventLogs(companyId, logtype, eventIDs, path, needDaySpace):
 
 def sendmail(companyId, mail_host, port, mail_user, mail_pass, sender, receivers, From, To, getdetaiconfig):
     # 第三方 SMTP 服务
-    # mail_host = "smtp.189.cn"  # 设置服务器
-    # mail_user = "18020882595"  # 用户名
-    # mail_pass = "zzx3641808"  # 口令
+    # mail_host = ""  # 设置服务器
+    # mail_user = ""  # 用户名
+    # mail_pass = ""  # 口令
     #
-    # sender = '18020882595@189.cn'
-    # receivers = ['34150740@qq.com']  # 接收邮件，可设置为你的QQ邮箱或者其他邮箱
+    # sender = ''
+    # receivers = ['']  # 接收邮件，可设置为你的QQ邮箱或者其他邮箱
     idCount = len(getdetaiconfig.sections())
     sended = set()
     mail_msg = '''
@@ -190,7 +173,6 @@ def sendmail(companyId, mail_host, port, mail_user, mail_pass, sender, receivers
         edetail = eval(getdetaiconfig[section]['detail'])
         esentstatus = getdetaiconfig[section]['sentstatus']
         count = len(dict(edetail))
-        # print(eevt_id, eevt_type, esource, emsg, edetail)
         mail_msg = mail_msg + """
                      <h2>事件类型合计：{} 个 当前序列 {} / {} 的事件ID = {}
                 </h2>
@@ -206,7 +188,6 @@ def sendmail(companyId, mail_host, port, mail_user, mail_pass, sender, receivers
         """.format(idCount, ncount, idCount, eevt_id, eevt_type, esource, str(emsg), count)
         for dt in edetail:
             if not esentstatus:
-                # print("没有")
                 mail_msg += '''
                 <p>记录编码：{} 记录时间：{}</p>
                 '''.format(edetail[dt], dt)
@@ -214,42 +195,18 @@ def sendmail(companyId, mail_host, port, mail_user, mail_pass, sender, receivers
                 sended.add(aa)
                 getdetaiconfig.set(str(section), 'sentstatus', str(sended))
             else:
-                # print("已经有esentstatus")
-                # print(esentstatus)
-                # esentstatus = set(esentstatus.split())
-                # if not isinstance(esentstatus, set):
-                #     esentstatus = set(esentstatus.split(','))
                 aa = str(section) + '-' + str(dt)
-                # print(aa)
-                # print(esentstatus)
                 if str(aa) not in esentstatus:
-                    # print("不存在")
                     mail_msg += '''
                     <p>记录编码：{} 记录时间：{}</p>
                     '''.format(dt, edetail[dt])
                     sended.add(aa)
                     getdetaiconfig.set(str(section), 'sentstatus', str(sended))
-                else:
-                    # print("存在")
-                    pass
-                # print(type(esentstatus))
-                # print(esentstatus.split())
-            # print((eval(edetail)[dt]))
-            # print(count)
-            # print(dt)
-            # sended.add(aa)
         mail_msg += '''</li></ul>'''
         ncount += 1
-        # getdetaiconfig.set(str(section), 'sentstatus', str(sended))
-        # esentstatus = set(esentstatus).union(sended)
-        # print(esentstatus)
-        # getdetaiconfig.set(str(section), 'sentstatus', str(esentstatus))
     detailIniPath = 'detail.ini'
     with open(detailIniPath, 'w', encoding='utf-8') as detailIniPath:
         getdetaiconfig.write(detailIniPath)
-    # print(sended)
-    # print(From,To)
-    # print(type(To))
     if sended:
         print("检测到有数据,开始发送邮件......")
         message = MIMEText(mail_msg, 'html', 'utf-8')
@@ -396,61 +353,22 @@ if __name__ == "__main__":
                                                                       eventIDs, logPath))
             print("----------------------------------邮件配置----------------------------------\n")
             print("开始获取系统日志......")
+            # getAllEvents() 获取系统日志函数
             getAllEvents(companyId, logType, eventIDs, logPath, needDaySpace)  # todo需要修改输出位置
             print("开始处理系统日志......")
-            # execlog()
+            # execlog() 处理系统日志函数
+            execlog()
             print("开始处理邮件......")
             detailIniPath = 'detail.ini'
             if os.path.exists(detailIniPath):
                 getdetaiconfig = configparser.ConfigParser()
                 getdetaiconfig.read("detail.ini", encoding="utf-8")
-                # ks = set()
-                # ns = dict()
-                # for section in getdetaiconfig.sections():
-                #     eevt_id = getdetaiconfig[section]['evt_id']
-                #     edetail = eval(getdetaiconfig[section]['detail'])
-                #     print(len(edetail))
-                #     for k in (edetail):
-                #         # dic = getdetaiconfig[i]['sentstatus']
-                #         # if k not in dic.keys():
-                #         #     getdetaiconfig[i]['sentstatus'][k] = str(0)
-                #         t = edetail[k]
-                #         print(k, t)
-                #         if t not in ks:
-                #             ks.add(t)
-                #     for k in (edetail):
-                #         t = edetail[k]
-                #         if t in ks:
-
-                # dd = str(section) + '-' + str(k)
-                # #print(edetail)
-                # if t not in edetail:
-                #     print("不存在相同时间{}-{}".format(k,t))
-                #     ks.add(dd)
-                # else:
-                #     print("存在相同时间{}-{}".format(k,t))
-                #     #print(edetail[k])
-                # print(ks)
-                # print(len(edetail))
-
-
-
+                # sendmail() 发送邮件函数
                 sendmail(companyId, mail_host, port, mail_user, mail_pass, sender, receivers, From, To, getdetaiconfig)
-                # with open(detailIniPath, 'w', encoding='utf-8') as detailIniPath:
-                #     getdetaiconfig.write(detailIniPath)
             else:
                 print("detail.ini不存在，退出!")
                 sys.exit()
 
             print('暂停 {} 分钟'.format(int(looptime / 60)))
             time.sleep(looptime)
-        # companyId = 1204  # None = local machine
-        # needDaySpace = 7  # 需要几天前的事件日志
-        # pickUplogTypes = ["System"]  # 目前只获取日志名称为：系统的日志
-        # # EventTypes = ['win32con.EVENTLOG_WARNING_TYPE', 'win32con.EVENTLOG_ERROR_TYPE',
-        # # 'win32con.EVENTLOG_INFORMATION_TYPE', 'win32con.EVENTLOG_AUDIT_FAILURE', 'win32con.EVENTLOG_AUDIT_SUCCESS']
-        # pickUpEventTypes = ['错误']  # 需要提取的类别列表
-        # pickUpEventIDs = [7, 8, 9, 14, 6008]  # 需要提取的事件ID列表
-        # # pickUplogTypes = ["System", "Application", "Security"]
 
-        # print()
